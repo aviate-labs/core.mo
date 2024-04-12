@@ -29,6 +29,15 @@ let value = encode(#TextString("Hello world!"));
 
 [Read more...](./src/cbor/README.md)
 
+### Certified Variables
+
+Canister smart contracts can declare variables as certified. Whenever set, these
+variables will automatically get a Merkle tree certificate, signed by the
+Internet Computer blockchain. This allows anyone to verify the authenticity of
+this type of data using the Internet Computer's public key.
+
+[Read more...](./src/certified/README.md)
+
 ### Crypto
 
 The Crypto library offers a collection of cryptographic functions and utilities,

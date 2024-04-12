@@ -461,20 +461,31 @@ module {
       case (#ByteString(s)) {
         let l = s.size();
         if (l <= 23) {
-          buffer.add(nat5b3(2, Nat8.fromNat(l)));
+          buffer.add(nat5b3(2, Nat8.fromIntWrap(l)));
         } else {
           if (l < 0xff) {
-            buffer.add(nat5b3(6, 24));
-            buffer.add(Nat8.fromNat(l));
+            buffer.add(nat5b3(2, 24));
+            buffer.add(Nat8.fromIntWrap(l));
           } else if (l < 0xffff) {
-            buffer.add(nat5b3(6, 25))
-            // TODO
+            buffer.add(nat5b3(2, 25));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 8)));
+            buffer.add(Nat8.fromIntWrap(l));
           } else if (l < 0xffff) {
-            buffer.add(nat5b3(6, 26))
-            // TODO
+            buffer.add(nat5b3(2, 26));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 24)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 16)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 8)));
+            buffer.add(Nat8.fromIntWrap(l));
           } else {
-            buffer.add(nat5b3(6, 27))
-            // TODO
+            buffer.add(nat5b3(2, 27));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 56)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 48)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 40)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 32)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 24)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 16)));
+            buffer.add(Nat8.fromIntWrap(shiftLeft(l, 8)));
+            buffer.add(Nat8.fromIntWrap(l));
           };
         };
         for (c in s.vals()) buffer.add(c);
