@@ -1,0 +1,11 @@
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aviate-labs/setup-dfx@v0.3.0
+        with:
+          dfx-version: 0.18.0
+          vessel-version: 0.7.0
+      - run: make check test
