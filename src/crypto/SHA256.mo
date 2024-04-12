@@ -78,7 +78,7 @@ module {
             len +%= Nat64.fromNat(s);
             var start = 0;
             if (0 < nx) {
-                let n = copy(nx, x, bs);
+                let n = copy(nx, 0 , x, bs);
                 nx += n;
                 if (nx == 64) {
                     block(Array.freeze(x), 0, 64);
@@ -92,7 +92,7 @@ module {
                 start += n;
             };
             if (0 < (s - start : Nat)) {
-                nx := copy(0, x, bs);
+                nx := copy(0, start, x, bs);
             };
         };
 
@@ -251,20 +251,23 @@ module {
 
     private func copy<T>(
         n : Nat, // Position to start writing.
+        o : Nat,
         dst : [var T],
         src : [T],
     ) : Nat {
         let l = dst.size();
         if (l < n) return 0;
-        for (i in src.keys()) {
+        var i = 0;
+        while (i < (src.size() - o : Nat)) {
             if (l <= n + i) return i;
-            dst[n + i] := src[i];
+            dst[n + i] := src[i + o];
+            i += 1;
         };
-        src.size();
+        src.size() - o;
     };
 
     private func nat8to32(n : Nat8) : Nat32 {
-        Nat32.fromNat(Nat8.toNat(n));
+        Nat32.fromIntWrap(Nat8.toNat(n));
     };
 
 };

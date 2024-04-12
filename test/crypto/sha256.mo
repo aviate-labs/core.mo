@@ -7,9 +7,23 @@ import SHA256 "mo:core/crypto/SHA256";
 let sum256 = SHA256.sum(Blob.toArray(Text.encodeUtf8("hello world\n")));
 assert(Hex.encode(sum256) == "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447");
 
+let d = SHA256.SHA256();
+for (c in Text.encodeUtf8("hello world\n").vals()) d.write([c]);
+assert(Hex.encode(d.checkSum()) == "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447");
+
 let h = SHA256.SHA256();
 h.write(Blob.toArray(Text.encodeUtf8("hello world\n")));
 assert(Hex.encode(sum256) == Hex.encode(h.sum([])));
+
+do {
+    var d = SHA256.SHA256();
+    let cs = d.checkSum();
+    assert(Hex.encode(cs) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    
+    d := SHA256.SHA256();
+    d.write(cs);
+    assert(Hex.encode(d.checkSum()) == "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456");
+};
 
 for (v in [
     ("", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
