@@ -1,5 +1,5 @@
 import { decode } = "mo:core/encoding/Hex";
-import { reconstruct; encodeCBOR } "mo:core/certified/HashTree";
+import { encodeCBOR; reconstruct; wellFormed } "mo:core/certified/HashTree";
 import { encodeUtf8 } = "mo:base/Text";
 
 func b(t : Text) : [Nat8] = Blob.toArray(encodeUtf8(t));
@@ -41,6 +41,10 @@ let tree = #fork(
         #labeled(b("d"), #leaf(b("morning"))),
     ),
 );
+
+assert(wellFormed(prunedTree));
+assert(wellFormed(tree));
+assert(not wellFormed(#fork(#leaf(b("a")), #empty)));
 
 assert(Hex.encode(reconstruct(prunedTree)) == "eb5c5b2195e62d996b84c9bcc8259d19a83786a2f59e0878cec84c811f669aa0");
 assert(Hex.encode(reconstruct(prunedTree)) == Hex.encode(reconstruct(tree)));

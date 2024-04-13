@@ -7,7 +7,7 @@ import Nat64 "mo:base/Nat64";
 
 import { BigEndian } = "../encoding/Binary";
 
-module {
+module SHA256 {
 
     /// Returns the SHA256 checksum of the data.
     public func sum(bs : [Nat8]) : [Nat8] {

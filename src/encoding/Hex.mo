@@ -7,7 +7,7 @@ import Nat8 "mo:base/Nat8";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 
-module {
+module Hex {
     private let base : Nat8 = 16;
     private let hex : [Char] = [
         '0',

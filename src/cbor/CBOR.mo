@@ -15,7 +15,7 @@ import { shiftLeft } = "mo:⛔";
 import { LittleEndian; BigEndian } "../encoding/Binary";
 import Float "../../internal/Float";
 
-module {
+module CBOR {
 
   public type Value = {
     /// An unsigned integer in the range 0..2^(64)-1 inclusive. The value

@@ -12,7 +12,7 @@ import {
     shiftRight;
 } = "mo:⛔";
 
-module {
+module Binary {
     private type ByteOrder = {
         fromNat16 : (Nat16) -> [Nat8];
         fromNat32 : (Nat32) -> [Nat8];
