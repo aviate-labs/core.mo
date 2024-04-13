@@ -1,5 +1,4 @@
 import Blob "mo:base/Blob";
-import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import List "mo:base/List";
 

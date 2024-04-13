@@ -8,6 +8,7 @@ various applications in Motoko.
 ## Content Table
 
 - [CBOR](#cbor-concise-binary-object-representation)
+- [Certified Variables](#certified-variables)
 - [Crypto](#crypto)
   - [SHA256](#sha256)
 - [Encoding](#encoding)
@@ -16,9 +17,10 @@ various applications in Motoko.
 
 ## Current Libraries
 
-### **CBOR** (Concise Binary Object Representation)
-  The CBOR library provides functions to encode and decode data in CBOR format,
-  which is a compact data format designed for efficient data exchange.
+### CBOR (Concise Binary Object Representation)
+
+The CBOR library provides functions to encode and decode data in CBOR format,
+which is a compact data format designed for efficient data exchange.
 
 ```motoko
 import CBOR "mo:core/cbor/CBOR";

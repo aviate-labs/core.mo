@@ -15,5 +15,6 @@ import HashTree "mo:core/certified/HashTree";
 module {
   encodeCBOR : HashTree -> Hash;
   reconstruct : HashTree -> Hash;
+  wellFormed : HashTree -> Bool;
 };
 ```
