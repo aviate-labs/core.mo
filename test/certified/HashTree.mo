@@ -11,40 +11,40 @@ func xb(t : Text) : [Nat8] = switch (decode(t)) {
     };
 };
 
-let prunedTree = #fork(
-    #fork(
-        #labeled(b("a"), #fork(
-            #pruned(xb("1b4feff9bef8131788b0c9dc6dbad6e81e524249c879e9f10f71ce3749f5a638")),
-            #labeled(b("y"), #leaf(b("world"))),
+let prunedTree = #Fork(
+    #Fork(
+        #Labeled(b("a"), #Fork(
+            #Pruned(xb("1b4feff9bef8131788b0c9dc6dbad6e81e524249c879e9f10f71ce3749f5a638")),
+            #Labeled(b("y"), #Leaf(b("world"))),
         )),
-        #labeled(b("b"), #pruned(xb("7b32ac0c6ba8ce35ac82c255fc7906f7fc130dab2a090f80fe12f9c2cae83ba6"))),
+        #Labeled(b("b"), #Pruned(xb("7b32ac0c6ba8ce35ac82c255fc7906f7fc130dab2a090f80fe12f9c2cae83ba6"))),
     ),
-    #fork(
-        #pruned(xb("ec8324b8a1f1ac16bd2e806edba78006479c9877fed4eb464a25485465af601d")),
-        #labeled(b("d"), #leaf(b("morning"))),
+    #Fork(
+        #Pruned(xb("ec8324b8a1f1ac16bd2e806edba78006479c9877fed4eb464a25485465af601d")),
+        #Labeled(b("d"), #Leaf(b("morning"))),
     ),
 );
 
-let tree = #fork(
-    #fork(
-        #labeled(b("a"), #fork(
-            #fork(
-                #labeled(b("x"), #leaf(b("hello"))),
-                #empty,
+let tree = #Fork(
+    #Fork(
+        #Labeled(b("a"), #Fork(
+            #Fork(
+                #Labeled(b("x"), #Leaf(b("hello"))),
+                #Empty,
             ),
-            #labeled(b("y"), #leaf(b("world"))),
+            #Labeled(b("y"), #Leaf(b("world"))),
         )),
-        #labeled(b("b"), #leaf(b("good"))),
+        #Labeled(b("b"), #Leaf(b("good"))),
     ),
-    #fork(
-        #labeled(b("c"), #empty),
-        #labeled(b("d"), #leaf(b("morning"))),
+    #Fork(
+        #Labeled(b("c"), #Empty),
+        #Labeled(b("d"), #Leaf(b("morning"))),
     ),
 );
 
 assert(wellFormed(prunedTree));
 assert(wellFormed(tree));
-assert(not wellFormed(#fork(#leaf(b("a")), #empty)));
+assert(not wellFormed(#Fork(#Leaf(b("a")), #Empty)));
 
 assert(Hex.encode(reconstruct(prunedTree)) == "eb5c5b2195e62d996b84c9bcc8259d19a83786a2f59e0878cec84c811f669aa0");
 assert(Hex.encode(reconstruct(prunedTree)) == Hex.encode(reconstruct(tree)));

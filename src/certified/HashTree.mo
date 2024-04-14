@@ -6,28 +6,28 @@ import CBOR "../cbor/CBOR";
 import SHA256 "../crypto/SHA256";
 
 module HashTree {
-    type Hash = [Nat8];
-    type Key = [Nat8];
-    type Value = [Nat8];
+    public type Hash = [Nat8];
+    public type Key = [Nat8];
+    public type Value = [Nat8];
 
-    type HashTree = {
-        #empty;
-        #fork : (HashTree, HashTree);
-        #labeled : (Key, HashTree);
-        #leaf : Value;
-        #pruned : Hash;
+    public type HashTree = {
+        #Empty;
+        #Fork : (HashTree, HashTree);
+        #Labeled : (Key, HashTree);
+        #Leaf : Value;
+        #Pruned : Hash;
     };
 
     // Well-formed trees have the property that labeled subtrees appear in
     // strictly increasing order of labels, and are not mixed with leaves.
     public func wellFormed(t : HashTree) : Bool {
         switch (t) {
-            case (#empty or #leaf(_) or #pruned(_)) true;
+            case (#Empty or #Leaf(_) or #Pruned(_)) true;
             case (_) {
                 var lbl = [] : [Nat8];
                 for (t in flatten(t)) switch (t) {
-                    case (#leaf(_)) return false;
-                    case (#labeled(l, t)) {
+                    case (#Leaf(_)) return false;
+                    case (#Labeled(l, t)) {
                         if (not strictlyIncreasing(lbl, l)) return false;
                         if (not wellFormed(t)) return false;
                         lbl := l;
@@ -55,11 +55,11 @@ module HashTree {
         public func next() : ?HashTree {
             switch (stack) {
                 case (null) null;
-                case (?(#empty, r) or ?(#pruned(_), r)) {
+                case (?(#Empty, r) or ?(#Pruned(_), r)) {
                     stack := r;
                     next();
                 };
-                case (?(#fork(left, right), r)) {
+                case (?(#Fork(left, right), r)) {
                     stack := ?(left, ?(right, r));
                     next();
                 };
@@ -73,11 +73,11 @@ module HashTree {
 
     public func reconstruct(t : HashTree) : Hash {
         switch (t) {
-            case (#empty) { hash.empty() };
-            case (#fork(l, r)) { hash.fork(reconstruct(l), reconstruct(r)) };
-            case (#labeled(k, t)) { hash.labeled(k, reconstruct(t)) };
-            case (#leaf(v)) { hash.leaf(v) };
-            case (#pruned(h)) { h };
+            case (#Empty) { hash.empty() };
+            case (#Fork(l, r)) { hash.fork(reconstruct(l), reconstruct(r)) };
+            case (#Labeled(k, t)) { hash.labeled(k, reconstruct(t)) };
+            case (#Leaf(v)) { hash.leaf(v) };
+            case (#Pruned(h)) { h };
         };
     };
 
@@ -116,11 +116,11 @@ module HashTree {
 
     private module cbor = {
         public func tree(t : HashTree) : CBOR.Value = switch (t) {
-            case (#empty) { empty() };
-            case (#fork(l, r)) { fork(l, r) };
-            case (#labeled(k, t)) { labeled(k, t) };
-            case (#leaf(v)) { leaf(v) };
-            case (#pruned(h)) { pruned(h) };
+            case (#Empty) { empty() };
+            case (#Fork(l, r)) { fork(l, r) };
+            case (#Labeled(k, t)) { labeled(k, t) };
+            case (#Leaf(v)) { leaf(v) };
+            case (#Pruned(h)) { pruned(h) };
         };
 
         public func empty() : CBOR.Value = #Array([
