@@ -44,14 +44,14 @@ func isBalanced(t : ?RBTree.Node) : Bool {
     _isBalanced(t, nrBlack);
 };
 
-var tree : ?RBTree.Node = null;
+var tree : RBTree.Tree = null;
 
 func insert(n : Nat8) {
     let kv = [n];
-    let (nt, ov) = RBTree.insertRoot(tree, kv, kv);
+    let (nt, ov) = RBTree.insert(tree, kv, kv);
     assert (ov == null);
-    assert (isBalanced(?nt));
-    tree := ?nt;
+    assert (isBalanced(nt));
+    tree := nt;
 };
 
 insert(10);
@@ -67,19 +67,41 @@ assert (
         [10],
         #Fork(
             #Labeled(
-                [8],
+                [9],
                 #Fork(
+                    #Labeled(
+                        [8],
+                        #Leaf([8]),
+                    ),
                     #Empty,
-                    #Labeled([9], #Leaf([9])),
                 ),
             ),
             #Labeled(
                 [12],
                 #Fork(
-                    #Labeled([11], #Leaf([11])),
+                    #Labeled(
+                        [11],
+                        #Leaf([11]),
+                    ),
                     #Empty,
                 ),
             ),
         ),
     )
 );
+
+do {
+    tree := null;
+
+    insert(100);
+    insert(99);
+
+    // right rotation
+    insert(98); // 99 becomes root, 98 is left child, 100 is right child.
+
+    // swap colors
+    insert(101); // 98 and 99 should become black.
+
+    // left rotation
+    insert(102); // 101 becomes parent, 100 is left child, 102 is right child.
+};

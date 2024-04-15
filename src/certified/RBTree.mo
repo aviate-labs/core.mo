@@ -1,49 +1,107 @@
 import P "mo:base/Prelude";
+import Iter "mo:base/Iter";
+import List "mo:base/List";
 
 import HashTree "HashTree";
 
-module {
+// Based on the RBTree of the Rust CDK.
+module RBTree {
+    // Tree represents a red-black tree, which keeps track of the hashes of the
+    // subtrees. This creates an overhead, so only use this if you need a
+    // certified tree.
+    public type Tree = ?Node;
+
+    // Node represents a node in the red-black tree.
     public type Node = (
-        key : [Nat8], // 0 : key
-        value : [Nat8], // 1 : value
+        key : HashTree.Key, // 0 : key
+        value : HashTree.Value, // 1 : value
         left : ?Node, // 2 : left
         right : ?Node, // 3 : right
         color : Color, // 4 : color
         hash : HashTree.Hash, // 5 : hash
     );
 
+    // Internal color type.
     private type Color = {
         #Red;
         #Black;
     };
 
-    private func flip(c : Color) : Color {
-        switch (c) {
-            case (#Red) { #Black };
-            case (#Black) { #Red };
+    private module Color {
+        public func flip(c : Color) : Color {
+            switch (c) {
+                case (#Red) { #Black };
+                case (#Black) { #Red };
+            };
         };
     };
 
-    public func insertRoot(root : ?Node, k : [Nat8], v : [Nat8]) : (Node, ?[Nat8]) {
-        let ((nk, nv, l, r, _, h), ov) = insert(root, k, v);
-        ((nk, nv, l, r, #Black, h), ov);
+    // Visits the tree in order.
+    public func visit(t : Tree, f : (HashTree.Key, HashTree.Value) -> ()) = _visit(t, f);
+
+    private func _visit(n : ?Node, f : (HashTree.Key, HashTree.Value) -> ()) {
+        switch (n) {
+            case (null) {};
+            case (?n) {
+                let (k, v, l, r, _, _) = n;
+                _visit(l, f);
+                f(k, v);
+                _visit(r, f);
+            };
+        };
     };
 
-    public func insert(t : ?Node, k : [Nat8], v : [Nat8]) : (Node, ?[Nat8]) {
-        switch (t) {
+    public func iter(t : Tree) : Iter.Iter<(HashTree.Key, HashTree.Value)> = object {
+        type IR = { #kv : (HashTree.Key, HashTree.Value); #node : Node };
+        var stack : List.List<IR> = switch (t) {
+            case (null) null;
+            case (?n) ?(#node(n), null);
+        };
+        public func next() : ?(HashTree.Key, HashTree.Value) {
+            switch (stack) {
+                case (null) null;
+                case (?(#kv(kv), rest)) {
+                    stack := rest;
+                    ?kv;
+                };
+                case (?(#node(k, v, ?l, ?r, _, _), rest)) {
+                    stack := ?(#node(l), ?(#kv(k, v), ?(#node(r), rest)));
+                    next();
+                };
+                case (?(#node(k, v, ?l, null, _, _), rest)) {
+                    stack := ?(#node(l), ?(#kv(k, v), rest));
+                    next();
+                };
+                case (?(#node(k, v, null, ?r, _, _), rest)) {
+                    stack := ?(#kv(k, v), ?(#node(r), rest));
+                    next();
+                };
+                case (?(#node(k, v, null, null, _, _), rest)) {
+                    stack := rest;
+                    ?(k, v);
+                };
+            };
+        };
+    };
+
+    // Inserts a new key-value pair into the tree.
+    public func insert(root : Tree, k : HashTree.Key, v : HashTree.Value) : (Tree, ?HashTree.Value) {
+        let ((nk, nv, l, r, _, h), ov) = _insert(root, k, v);
+        (?(nk, nv, l, r, #Black, h), ov);
+    };
+
+    private func _insert(n : ?Node, k : HashTree.Key, v : HashTree.Value) : (Node, ?HashTree.Value) {
+        switch (n) {
             case (null) { (newNode(k, v), null) };
-            case (?n) {
-                let (nk, kv, l, r, c, h) = n;
-                let (nn, ov) : (Node, ?[Nat8]) = switch (compare(k, nk)) {
+            case (?(nk, kv, l, r, c, h)) {
+                let (nn, ov) : (Node, ?HashTree.Value) = switch (compare(k, nk)) {
+                    case (#equal) ((nk, v, l, r, c, h), ?kv);
                     case (#less) {
-                        let (nl, ov) = insert(l, k, v);
+                        let (nl, ov) = _insert(l, k, v);
                         ((nk, kv, ?nl, r, c, h), ov);
                     };
-                    case (#equal) {
-                        ((nk, v, l, r, c, h), ?kv);
-                    };
                     case (#greater) {
-                        let (nr, ov) = insert(r, k, v);
+                        let (nr, ov) = _insert(r, k, v);
                         ((nk, kv, l, ?nr, c, h), ov);
                     };
                 };
@@ -52,29 +110,29 @@ module {
         };
     };
 
-    public func get(t : ?Node, k : [Nat8]) : ?[Nat8] {
-        var root = t;
-        label l loop {
-            let (key, v, l, r, _, _) = switch (root) {
-                case (null) { break l };
-                case (?v) { v };
+    // Gets the value associated with the given key.
+    public func get(root : Tree, k : HashTree.Key) : ?HashTree.Value = _get(root, k);
+
+    private func _get(n : ?Node, k : HashTree.Key) : ?HashTree.Value {
+        var current = n;
+        loop {
+            let (nk, nv, l, r, _, _) = switch (current) {
+                case (?v) v;
+                case (null) return null;
             };
-            switch (compare(k, key)) {
-                case (#less) {
-                    root := l;
-                };
-                case (#equal) {
-                    return ?v;
-                };
-                case (#greater) {
-                    root := r;
-                };
+            switch (compare(k, nk)) {
+                case (#less) current := l;
+                case (#equal) return ?nv;
+                case (#greater) current := r;
             };
         };
-        null;
     };
 
-    private func compare(xs : [Nat8], ys : [Nat8]) : { #less; #equal; #greater } {
+    private func compare(xs : HashTree.Key, ys : HashTree.Key) : {
+        #less;
+        #equal;
+        #greater;
+    } {
         if (xs.size() < ys.size()) return #less;
         if (xs.size() > ys.size()) return #greater;
         var i = 0;
@@ -88,49 +146,53 @@ module {
         #equal;
     };
 
-    private func isRed(n : ?Node) : Bool {
-        switch (n) {
-            case (?(_, _, _, _, #Red, _)) { true };
-            case (_) { false };
-        };
+    private func isRed(n : ?Node) : Bool = switch (n) {
+        case (?(_, _, _, _, #Red, _)) { true };
+        case (_) { false };
     };
 
     private func balance(n : Node) : Node {
-        switch (n) {
-            case (k, v, ?l, ?r, c, h) {
-                if (not isRed(?l) and isRed(?r)) return rotateLeft(n);
-                if (isRed(?l) and isRed(l.2)) return rotateRight(n);
-                if (isRed(?l) and isRed(?r)) return (k, v, ?flipColor(l), ?flipColor(r), flip(c), h);
-            };
-            case (_) {};
-        };
-        n;
+        var nn = n;
+        if (not isRed(nn.2) and isRed(nn.3)) nn := rotateLeft(nn);
+        if (isRed(nn.2) and isRed(unwrap(nn.2).2)) nn := rotateRight(nn);
+        if (isRed(nn.2) and isRed(nn.3)) nn := flipColors(nn);
+        nn;
     };
 
-    private func rotateRight(n : Node) : Node {
-        assert (isRed(n.2));
-        var l = unwrap(n.2);
-        // n.l = n.l.r;
-        let h = update((n.0, n.1, l.3, n.3, n.4, n.5));
-        // r.r = h;
-        // r.c = h.c;
-        // r.r.c = #Red;
-        update((l.0, l.1, l.2, ?(h.0, h.1, h.2, h.3, #Red, h.5), h.4, l.5));
-    };
-
+    // Rotates the given node to the left.
+    // This comes down to making the right child the new root of the subtree.
+    // Which means that the left tree of the right child becomes the right tree
+    // of the old root. The hashes of the nodes are updated accordingly.
     private func rotateLeft(n : Node) : Node {
         assert (isRed(n.3));
-        var r = unwrap(n.3);
-        // n.r = n.r.l;
-        let h = update((n.0, n.1, n.2, r.2, n.4, n.5));
-        // r.l = h;
-        // r.c = h.c;
-        // r.l.c = #Red;
-        update((r.0, r.1, ?(h.0, h.1, h.2, h.3, #Red, h.5), r.3, h.4, r.5));
+        var nn = unwrap(n.3);
+        let nl = update((n.0, n.1, n.2, nn.2, n.4, n.5));
+        update((nn.0, nn.1, ?(nl.0, nl.1, nl.2, nl.3, #Red, nl.5), nn.3, nl.4, nn.5));
     };
 
-    private func flipColor((k, v, l, r, c, h) : Node) : Node {
-        (k, v, l, r, flip(c), h);
+    // Rotates the given node to the right.
+    // This comes down to making the left child the new root of the subtree.
+    // Which means that the right tree of the left child becomes the left tree
+    // of the old root. The hashes of the nodes are updated accordingly.
+    private func rotateRight(n : Node) : Node {
+        assert (isRed(n.2));
+        var nn = unwrap(n.2);
+        let nr = update((n.0, n.1, nn.3, n.3, n.4, n.5));
+        update((nn.0, nn.1, nn.2, ?(nr.0, nr.1, nr.2, nr.3, #Red, nr.5), nr.4, nn.5));
+    };
+
+    // Flips the color of the given node and its children.
+    private func flipColors((k, v, l, r, c, h) : Node) : Node {
+        (k, v, flipColor(l), flipColor(r), Color.flip(c), h);
+    };
+
+    private func flipColor(n : ?Node) : ?Node {
+        switch (n) {
+            case (null) n;
+            case (?(k, v, l, r, c, h)) {
+                ?(k, v, l, r, Color.flip(c), h);
+            };
+        };
     };
 
     // NOTE: do use with caution!
@@ -142,7 +204,7 @@ module {
     };
 
     // Returns a new node based on the given key and value.
-    public func newNode(key : [Nat8], value : [Nat8]) : Node {
+    public func newNode(key : HashTree.Key, value : HashTree.Value) : Node {
         (key, value, null, null, #Red, HashTree.reconstruct(#Labeled(key, #Leaf(value))));
     };
 

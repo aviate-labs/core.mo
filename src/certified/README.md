@@ -25,12 +25,13 @@ module {
 
 ```motoko
 module {
-  type Node = ([Nat8], [Nat8], ?Node, ?Node, Color, Hash);
-  get : (?Node, [Nat8]) -> ?[Nat8];
+  type Node = (Key, Value, ?Node, ?Node, Color, Hash);
+  type Tree = ?Node;
+  get : (Tree, Key) -> ?Value;
   getHash : ?Node -> ?Hash;
   getHashTree : ?Node -> HashTree;
-  insert : (?Node, [Nat8], [Nat8]) -> (Node, ?[Nat8]);
-  insertRoot : (?Node, [Nat8], [Nat8]) -> (Node, ?[Nat8]);
-  newNode : ([Nat8], [Nat8]) -> Node;
+  insert : (Tree, Key, Value) -> (Node, ?Value);
+  newNode : (Key, Value) -> Node;
+  visit : (Tree, (Key, Value) -> ()) -> ();
 };
 ```
