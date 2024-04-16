@@ -27,10 +27,14 @@ module {
 module {
   type Node = (Key, Value, ?Node, ?Node, Color, Hash);
   type Tree = ?Node;
+  delete : (Tree, Key) -> (?Node, ?Value);
+  deleteMin : Tree -> (?Node, ?Value);
   get : (Tree, Key) -> ?Value;
   getHash : ?Node -> ?Hash;
   getHashTree : ?Node -> HashTree;
-  insert : (Tree, Key, Value) -> (Node, ?Value);
+  insert : (Tree, Key, Value) -> (Tree, ?Value);
+  iter : Tree -> Iter<(Key, Value)>;
+  min : Tree -> ?Node;
   newNode : (Key, Value) -> Node;
   visit : (Tree, (Key, Value) -> ()) -> ();
 };

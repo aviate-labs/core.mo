@@ -4,7 +4,8 @@ import List "mo:base/List";
 
 import HashTree "HashTree";
 
-// Based on the RBTree of the Rust CDK.
+// Based on 2-3 LLRB trees (https://sedgewick.io/wp-content/themes/sedgewick/papers/2008LLRB.pdf).
+// This is the same type of tree that is used in de Rust CDK.
 module RBTree {
     // Tree represents a red-black tree, which keeps track of the hashes of the
     // subtrees. This creates an overhead, so only use this if you need a
@@ -51,6 +52,7 @@ module RBTree {
         };
     };
 
+    // Iterates over the tree in order (left, root, right).
     public func iter(t : Tree) : Iter.Iter<(HashTree.Key, HashTree.Value)> = object {
         type IR = { #kv : (HashTree.Key, HashTree.Value); #node : Node };
         var stack : List.List<IR> = switch (t) {
@@ -87,27 +89,125 @@ module RBTree {
     // Inserts a new key-value pair into the tree.
     public func insert(root : Tree, k : HashTree.Key, v : HashTree.Value) : (Tree, ?HashTree.Value) {
         let ((nk, nv, l, r, _, h), ov) = _insert(root, k, v);
-        (?(nk, nv, l, r, #Black, h), ov);
+        (?(nk, nv, l, r, #Black, h), ov); // The root is always black.
     };
 
     private func _insert(n : ?Node, k : HashTree.Key, v : HashTree.Value) : (Node, ?HashTree.Value) {
         switch (n) {
+            // The root is empty, so we insert a new node.
             case (null) { (newNode(k, v), null) };
+            // The root is not empty, so we insert the key-value pair into the tree.
             case (?(nk, kv, l, r, c, h)) {
                 let (nn, ov) : (Node, ?HashTree.Value) = switch (compare(k, nk)) {
+                    // The key is equal to the current key, so we update the value.
                     case (#equal) ((nk, v, l, r, c, h), ?kv);
                     case (#less) {
+                        // The key is less than the current key, so we insert it into the left subtree.
                         let (nl, ov) = _insert(l, k, v);
                         ((nk, kv, ?nl, r, c, h), ov);
                     };
                     case (#greater) {
+                        // The key is greater than the current key, so we insert it into the right subtree.
                         let (nr, ov) = _insert(r, k, v);
                         ((nk, kv, l, ?nr, c, h), ov);
                     };
                 };
+                // Balance the tree and update the hash.
                 (balance(update(nn)), ov);
             };
         };
+    };
+
+    public func deleteMin(root : Tree) : (?Node, ?HashTree.Value) {
+        switch (root) {
+            case (?n) switch (_deleteMin(n)) {
+                case (?nn, ov) (?(nn.0, nn.1, nn.2, nn.3, #Black, nn.5), ov);
+                case (n, ov) (n, ov);
+            };
+            // Nothing to delete.
+            case (_) (null, null);
+        };
+    };
+
+    private func _deleteMin(n : Node) : (?Node, ?HashTree.Value) {
+        var nn = n;
+        if (nn.2 == null) {
+            debug assert(nn.3 == null);
+            return (null, ?nn.0);
+        };
+
+        if (not isRed(nn.2) and not isRed(unwrap(nn.2).2)) {
+            nn := moveRedLeft(nn);
+        };
+
+        let (nl, ov) = _deleteMin(unwrap(nn.2));
+        return (?balance(update((nn.0, nn.1, nl, nn.3, nn.4, nn.5))), ov);
+    };
+
+    public func delete(root : Tree, k : HashTree.Key) : (?Node, ?HashTree.Value) {
+        if (get(root, k) == null) return (root, null);
+        switch (root) {
+            case (?n) switch (_delete(n, k)) {
+                case (?nn, ov) (?(nn.0, nn.1, nn.2, nn.3, #Black, nn.5), ov);
+                case (n, ov) (n, ov);
+            };
+            // Nothing to delete.
+            case (_) (null, null);
+        };
+    };
+
+    private func _delete(n : Node, k : HashTree.Key) : (?Node, ?HashTree.Value) {
+        var nn = n;
+        var ov : ?HashTree.Value = null;
+
+        let cmp = compare(k, nn.0);
+        if (cmp == #less) {
+            if (not isRed(nn.2) and nn.2 != null and not isRed(unwrap(nn.2).2)) {
+                nn := moveRedLeft(nn);
+            };
+
+            let (nl, nov) = _delete(unwrap(nn.2), k);
+            nn := (nn.0, nn.1, nl, nn.3, nn.4, nn.5);
+            ov := nov;
+        } else {
+            if (isRed(nn.2)) {
+                nn := rotateRight(nn);
+            };
+            if (cmp == #equal and nn.3 == null) {
+                debug assert(nn.2 == null);
+                return (null, ?nn.1);
+            };
+            if (not isRed(nn.3) and nn.3 != null and not isRed(unwrap(nn.3).2)) {
+                nn := moveRedRight(nn);
+            };
+            if (compare(k, nn.0) == #equal) {
+                let m = unwrap(min(nn.3));
+                let (nr, _) = _deleteMin(unwrap(nn.3));
+                nn := (m.0, m.1, nn.2, nr, nn.4, nn.5);
+                ov := ?nn.1;
+            } else {
+                let (nr, nov) = _delete(unwrap(nn.3), k);
+                nn := (nn.0, nn.1, nn.2, nr, nn.4, nn.5);
+                ov := nov;
+            };
+        };
+        (?balance(update(nn)), ov);
+    };
+
+    private func moveRedLeft(n : Node) : Node {
+        var nn = flipColors(n);
+        if (nn.3 != null and isRed(unwrap(nn.3).2)) {
+            return flipColors(rotateLeft(nn.0, nn.1, nn.2, ?rotateRight(unwrap(nn.3)), nn.4, nn.5));
+        };
+        nn;
+    };
+
+    private func moveRedRight(n : Node) : Node {
+        var nn = flipColors(n);
+        if (nn.2 != null and isRed(unwrap(nn.2).2)) {
+            return flipColors(rotateRight(nn));
+        };
+        nn;
     };
 
     // Gets the value associated with the given key.
@@ -125,6 +225,16 @@ module RBTree {
                 case (#equal) return ?nv;
                 case (#greater) current := r;
             };
+        };
+    };
+
+    public func min(root : Tree) : ?Node = _min(root);
+
+    private func _min(n : ?Node) : ?Node {
+        var current = n;
+        loop switch (current) {
+            case (?(_, _, ?l, _, _, _)) current := ?l;
+            case (_) return current;
         };
     };
 
@@ -153,8 +263,11 @@ module RBTree {
 
     private func balance(n : Node) : Node {
         var nn = n;
+        // If the left child it black and the right child is red, rotate left.
         if (not isRed(nn.2) and isRed(nn.3)) nn := rotateLeft(nn);
+        // If the left child and its left child are red, rotate right.
         if (isRed(nn.2) and isRed(unwrap(nn.2).2)) nn := rotateRight(nn);
+        // If both children are red, flip the colors.
         if (isRed(nn.2) and isRed(nn.3)) nn := flipColors(nn);
         nn;
     };
@@ -164,7 +277,7 @@ module RBTree {
     // Which means that the left tree of the right child becomes the right tree
     // of the old root. The hashes of the nodes are updated accordingly.
     private func rotateLeft(n : Node) : Node {
-        assert (isRed(n.3));
+        debug assert (isRed(n.3));
         var nn = unwrap(n.3);
         let nl = update((n.0, n.1, n.2, nn.2, n.4, n.5));
         update((nn.0, nn.1, ?(nl.0, nl.1, nl.2, nl.3, #Red, nl.5), nn.3, nl.4, nn.5));
@@ -175,7 +288,7 @@ module RBTree {
     // Which means that the right tree of the left child becomes the left tree
     // of the old root. The hashes of the nodes are updated accordingly.
     private func rotateRight(n : Node) : Node {
-        assert (isRed(n.2));
+        debug assert (isRed(n.2));
         var nn = unwrap(n.2);
         let nr = update((n.0, n.1, nn.3, n.3, n.4, n.5));
         update((nn.0, nn.1, nn.2, ?(nr.0, nr.1, nr.2, nr.3, #Red, nr.5), nr.4, nn.5));

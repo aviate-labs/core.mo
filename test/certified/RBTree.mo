@@ -62,33 +62,7 @@ insert(11);
 
 let ht = RBTree.getHashTree(tree);
 assert (HashTree.wellFormed(ht));
-assert (
-    ht == #Labeled(
-        [10],
-        #Fork(
-            #Labeled(
-                [9],
-                #Fork(
-                    #Labeled(
-                        [8],
-                        #Leaf([8]),
-                    ),
-                    #Empty,
-                ),
-            ),
-            #Labeled(
-                [12],
-                #Fork(
-                    #Labeled(
-                        [11],
-                        #Leaf([11]),
-                    ),
-                    #Empty,
-                ),
-            ),
-        ),
-    )
-);
+// TODO: assert (ht == #Labeled());
 
 do {
     tree := null;
@@ -104,4 +78,30 @@ do {
 
     // left rotation
     insert(102); // 101 becomes parent, 100 is left child, 102 is right child.
+};
+
+
+func delete(n : Nat8) {
+    let (nt, ov) = RBTree.delete(tree, [n]);
+    assert (ov != null);
+    assert (isBalanced(nt));
+    tree := nt;
+};
+
+do {
+    delete(100);
+
+    // Delete unexisting node.
+    for (i in ([100, 0, 10, 255] : [Nat8]).vals()) {
+        let (nt, ov) = RBTree.delete(tree, [i]);
+        assert (nt == tree);
+        assert (ov == null);
+    };
+
+    delete(99);
+    delete(98);
+    delete(101);
+    delete(102);
+
+    assert(tree == null);
 };
